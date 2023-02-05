@@ -30,7 +30,7 @@ while game_is_on:
             row = csv[csv.state == state]
             x = int(row.x)
             y = int(row.y)
-
+            
             names.goto(x,y)
             names.write(state,font=FONT,align=ALIGNMENT)
             correct_answers.append(states.pop(index))
