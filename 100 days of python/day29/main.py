@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import messagebox
+import json
 import pyperclip
 WHITE = "#fff"
 PASSWORT_LENGTH = 40
@@ -48,15 +49,48 @@ def save_password() -> None:
     is_ok = messagebox.askokcancel(
         title=website, message=f"Das wird für {website} gespeichert:\nEmail: {mail}\nPassword: {password}\nGeht das klar!?")
 
-    if is_ok:
-        with open("data.txt", mode="a", encoding="UTF-8")as file:
-            file.write(f"{website} | {mail} | {password}\n")
+    if not is_ok:
+        return
 
-        entry_website.delete(0, END)
-        entry_password.delete(0, END)
+    new_data = {website: {"email": mail, "password": password}}
+    try:
+        with open("data.json", mode="r", encoding="UTF-8")as file:
+            data = json.load(file)
+            data.update(new_data)
+    except FileNotFoundError:
+        data = new_data
+    except json.decoder.JSONDecodeError:
+        data = new_data
+
+    with open("data.json", mode="w", encoding="UTF-8") as file:
+        json.dump(data, file, indent=4)
+
+    entry_website.delete(0, END)
+    entry_password.delete(0, END)
+
+
+def search_password():
+    website = entry_website.get()
+
+    try:
+        with open("data.json", mode="r", encoding="UTF-8")as file:
+            data = json.load(file)
+    except FileNotFoundError:
+        messagebox.showinfo(title="Datenbank leer",
+                            message="Keine Passwörter in Datenbank!")
+    else:
+        if website in data:
+            mail = data[website]['email']
+            password = data[website]['password']
+            messagebox.showinfo(title="Passwort gefunden!",
+                                message=f"Mail: {mail}\nPasswort: {password}")
+        else:
+            messagebox.showinfo(title="Passwort nicht gefunden!",
+                                message=f"{website} nicht in Datenbank!")
 
 
 # ---------------------------- UI SETUP ------------------------------- #
+
 
 window = Tk()
 window.title("Password Manager")
@@ -76,9 +110,13 @@ label_email.grid(column=0, row=2)
 label_password = Label(text="Password:")
 label_password.grid(column=0, row=3)
 
-entry_website = Entry(width=45)
-entry_website.grid(column=1, row=1, columnspan=2)
+entry_website = Entry(width=25)
+entry_website.grid(column=1, row=1)
 entry_website.focus()
+
+button_generate = Button(text="Search",
+                         command=search_password)
+button_generate.grid(column=2, row=1)
 
 entry_mail = Entry(width=45)
 entry_mail.insert(END, string="falk.altrock@gmail.com")
